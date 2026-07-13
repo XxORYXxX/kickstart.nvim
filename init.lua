@@ -99,7 +99,7 @@ do
   vim.g.maplocalleader = ' '
 
   -- Set to true if you have a Nerd Font installed and selected in the terminal
-  vim.g.have_nerd_font = false
+  vim.g.have_nerd_font = true
 
   -- [[ Setting options ]]
   --  See `:help vim.o`
@@ -382,22 +382,72 @@ do
   -- change the command under that to load whatever the name of that colorscheme is.
   --
   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-  vim.pack.add { gh 'folke/tokyonight.nvim' }
-  ---@diagnostic disable-next-line: missing-fields
-  require('tokyonight').setup {
-    styles = {
-      comments = { italic = false }, -- Disable italics in comments
-    },
-  }
+  vim.pack.add { gh 'Mofiqul/dracula.nvim' }
 
   -- Load the colorscheme here.
   -- Like many other themes, this one has different styles, and you could load
   -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-  vim.cmd.colorscheme 'tokyonight-night'
+  vim.cmd.colorscheme 'dracula'
+
+  -- Iconos de archivo (dependencia de lualine y bufferline)
+  vim.pack.add { gh 'nvim-tree/nvim-web-devicons' }
+  require('nvim-web-devicons').setup {}
+
+  -- Barra de estado
+  vim.pack.add { gh 'nvim-lualine/lualine.nvim' }
+  require('lualine').setup {
+    options = { theme = 'dracula-nvim' },
+  }
+
+  -- Pestañas de buffers
+  vim.pack.add { gh 'akinsho/bufferline.nvim' }
+  require('bufferline').setup {
+    options = { diagnostics = 'nvim_lsp' },
+  }
+
+  -- Pantalla de inicio (solo el módulo dashboard de snacks.nvim, el resto apagado)
+  vim.pack.add { gh 'folke/snacks.nvim' }
+  require('snacks').setup {
+    dashboard = {
+      enabled = true,
+      sections = {
+        { section = 'header' },
+        { section = 'keys', gap = 1, padding = 1 },
+        { section = 'recent_files', limit = 5, padding = 1 },
+      },
+    },
+    explorer = { enabled = true },
+    picker = { enabled = true },
+    bigfile = { enabled = false },
+    indent = { enabled = false },
+    input = { enabled = false },
+    notifier = { enabled = false },
+    quickfile = { enabled = false },
+    scroll = { enabled = false },
+    statuscolumn = { enabled = false },
+    words = { enabled = false },
+  }
+
+  -- Reemplaza la línea de comandos, mensajes y popup menu (más invasivo que los plugins anteriores)
+  vim.pack.add { gh 'MunifTanjim/nui.nvim', gh 'folke/noice.nvim' }
+  require('noice').setup {
+    lsp = {
+      override = {
+        ['vim.lsp.util.convert_input_to_markdown_lines'] = true,
+        ['vim.lsp.util.stylize_markdown'] = true,
+      },
+    },
+    presets = {
+      bottom_search = true,
+      command_palette = true,
+      long_message_to_split = true,
+      lsp_doc_border = false,
+    },
+  }
 
   -- Highlight todo, notes, etc in comments
   vim.pack.add { gh 'folke/todo-comments.nvim' }
-  require('todo-comments').setup { signs = false }
+  require('todo-comments').setup { signs = true }
 
   -- [[ mini.nvim ]]
   --  A collection of various small independent plugins/modules
@@ -431,19 +481,6 @@ do
   -- - sd'   - [S]urround [D]elete [']quotes
   -- - sr)'  - [S]urround [R]eplace [)] [']
   require('mini.surround').setup()
-
-  -- Simple and easy statusline.
-  --  You could remove this setup call if you don't like it,
-  --  and try some other statusline plugin
-  local statusline = require 'mini.statusline'
-  -- Set `use_icons` to true if you have a Nerd Font
-  statusline.setup { use_icons = vim.g.have_nerd_font }
-
-  -- You can configure sections in the statusline by overriding their
-  -- default behavior. For example, here we set the section for
-  -- cursor location to LINE:COLUMN
-  ---@diagnostic disable-next-line: duplicate-set-field
-  statusline.section_location = function() return '%2l:%-2v' end
 
   -- ... and there is more!
   --  Check out: https://github.com/nvim-mini/mini.nvim
@@ -494,12 +531,26 @@ do
     -- You can put your default mappings / updates / etc. in here
     --  All the info you're looking for is in `:help telescope.setup()`
     --
-    -- defaults = {
-    --   mappings = {
-    --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-    --   },
-    -- },
-    -- pickers = {}
+    defaults = {
+      mappings = {
+        i = { ['<c-enter>'] = 'to_fuzzy_refine' },
+      },
+
+      file_ignore_patterns = { '%.git/' }
+    },
+
+    pickers = {
+      find_files = {
+        hidden = true,
+      },
+    },
+
+    live_grep = {
+      additional_args = function()
+        return { '--hidden' }
+      end,
+    },
+
     extensions = {
       ['ui-select'] = { require('telescope.themes').get_dropdown() },
     },
@@ -514,6 +565,9 @@ do
   vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
   vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
   vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+  vim.keymap.set('n', '<leader>sF', function()
+    builtin.find_files { hidden = true, no_ignore = true }
+  end, { desc = '[S]earch [F]iles (ignoring gitignor)' })
   vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
   vim.keymap.set({ 'n', 'v' }, '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
   vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
@@ -522,6 +576,7 @@ do
   vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
   vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
   vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+  vim.keymap.set('n', '<leader>e', function() Snacks.explorer() end, { desc = 'File [E]xplorer' })
 
   -- Add Telescope-based LSP pickers when an LSP attaches to a buffer.
   -- If you later switch picker plugins, this is where to update these mappings.
@@ -692,18 +747,18 @@ do
   --  See `:help lsp-config` for information about keys and how to configure
   ---@type table<string, vim.lsp.Config>
   local servers = {
-    -- clangd = {},
-    -- gopls = {},
-    -- pyright = {},
-    -- rust_analyzer = {},
+    clangd = {},
+    gopls = {},
+    pyright = {},
+    rust_analyzer = {
+      cmd = { vim.fn.stdpath('data') .. '/mason/bin/rust-analyzer' },
+    },
     --
     -- Some languages (like typescript) have entire language plugins that can be useful:
     --    https://github.com/pmizio/typescript-tools.nvim
     --
     -- But for many setups, the LSP (`ts_ls`) will work just fine
-    -- ts_ls = {},
-
-    stylua = {}, -- Used to format Lua code
+    ts_ls = {},
 
     -- Special Lua Config, as recommended by neovim help docs
     lua_ls = {
@@ -760,6 +815,9 @@ do
   local ensure_installed = vim.tbl_keys(servers or {})
   vim.list_extend(ensure_installed, {
     -- You can add other tools here that you want Mason to install
+    'stylua',
+    'pyright',
+    'rust-analyzer'
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -782,8 +840,8 @@ do
     format_on_save = function(bufnr)
       -- You can specify filetypes to autoformat on save here:
       local enabled_filetypes = {
-        -- lua = true,
-        -- python = true,
+        lua = true,
+        python = true,
       }
       if enabled_filetypes[vim.bo[bufnr].filetype] then
         return { timeout_ms = 500 }
@@ -796,12 +854,16 @@ do
     },
     -- You can also specify external formatters in here.
     formatters_by_ft = {
-      -- rust = { 'rustfmt' },
+      rust = { 'rustfmt' },
+      lua = { 'stylua' },
+      typescript = { "prettierd", "prettier", stop_after_first = true },
+      c = { 'clang' },
+      cpp = { 'clang' },
       -- Conform can also run multiple formatters sequentially
-      -- python = { "isort", "black" },
+      python = { "isort", "black" , "ruff"},
       --
       -- You can use 'stop_after_first' to run the first available formatter from the list
-      -- javascript = { "prettierd", "prettier", stop_after_first = true },
+      javascript = { "prettierd", "prettier", stop_after_first = true },
     },
   }
 
@@ -904,7 +966,7 @@ do
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
 
   -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+  local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python', 'javascript', 'typescript', 'cpp', 'rust', 'go', }
   require('nvim-treesitter').install(parsers)
 
   ---@param buf integer
